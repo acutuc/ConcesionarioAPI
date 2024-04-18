@@ -26,6 +26,14 @@ namespace ConcesionarioAPI.Context
                 .HasMany(s => s.Vehiculos)
                 .WithOne(c => c.Sucursal)
                 .HasForeignKey(c => c.SucursalID);
+
+            modelBuilder.Entity<Usuario>()
+               .Property(u => u.NombreUsuario)
+               .IsRequired();
+
+            modelBuilder.Entity<Usuario>()
+                .Property(u => u.ClaveUsuario)
+                .IsRequired();
         }
     }
 }

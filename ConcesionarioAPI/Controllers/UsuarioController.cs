@@ -8,6 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using ConcesionarioAPI.Context;
 using ConcesionarioAPI.Models;
 using ConcesionarioAPI.DTOs;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace ConcesionarioAPI.Controllers
 {
@@ -16,10 +20,12 @@ namespace ConcesionarioAPI.Controllers
     public class UsuarioController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public UsuarioController(AppDbContext context)
+        public UsuarioController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         // GET: api/Usuario
@@ -65,20 +71,18 @@ namespace ConcesionarioAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<UsuarioDTO>> PostUsuario(UsuarioDTO usuarioDTO)
         {
-            // Verifica si hay un UsuarioID proporcionado, y si es así, devuelve un error
-            if (usuarioDTO.UsuarioID != 0)
-            {
-                ModelState.AddModelError("UsuarioID", "El UsuarioID no debe ser proporcionado al crear un nuevo usuario.");
-                return BadRequest(ModelState);
-            }
-
             // Crea un nuevo usuario con los datos proporcionados
             var usuario = new Usuario
             {
                 NombreUsuario = usuarioDTO.NombreUsuario,
-                ClaveUsuario = usuarioDTO.ClaveUsuario,
-                TipoUsuario = usuarioDTO.TipoUsuario
+                ClaveUsuario = usuarioDTO.ClaveUsuario
             };
+
+            // Asigna TipoUsuario solo si tiene un valor
+            if (!string.IsNullOrEmpty(usuarioDTO.TipoUsuario))
+            {
+                usuario.TipoUsuario = usuarioDTO.TipoUsuario;
+            }
 
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
@@ -91,6 +95,67 @@ namespace ConcesionarioAPI.Controllers
                 ClaveUsuario = usuario.ClaveUsuario,
                 TipoUsuario = usuario.TipoUsuario
             });
+        }
+
+        // POST para el login:
+        [HttpPost("login")]
+        public async Task<ActionResult<dynamic>> Authenticate([FromBody] UsuarioDTO usuarioDTO)
+        {
+            var usuario = await _context.Usuarios.SingleOrDefaultAsync(u => u.NombreUsuario == usuarioDTO.NombreUsuario && u.ClaveUsuario == usuarioDTO.ClaveUsuario);
+
+            if (usuario == null)
+                return NotFound(new { message = "Nombre de usuario o contraseña incorrectos" });
+
+            var token = GenerateJwtToken(usuario);
+
+            return new
+            {
+                usuario.UsuarioID,
+                usuario.NombreUsuario,
+                usuario.TipoUsuario,
+                Token = token
+            };
+        }
+
+        //Método que genera un Token para un usuario UNA VEZ SE HA LOGUEADO:
+        private string GenerateJwtToken(Usuario user)
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UsuarioID.ToString()),
+                new Claim(ClaimTypes.Name, user.NombreUsuario),
+                new Claim(ClaimTypes.Role, user.TipoUsuario)
+            };
+
+            // Genera una clave secreta de 256 bits (32 bytes)
+            var key = GenerateRandomKey(32);
+            var creds = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Issuer"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+
+        // Método para generar una clave aleatoria
+        private static string GenerateRandomKey(int length)
+        {
+            const string validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var random = new Random();
+            var chars = new char[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                chars[i] = validChars[random.Next(validChars.Length)];
+            }
+
+            return new string(chars);
         }
 
         // PUT: api/Usuario/5
