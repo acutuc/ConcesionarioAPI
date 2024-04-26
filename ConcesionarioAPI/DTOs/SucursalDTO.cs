@@ -4,7 +4,8 @@ namespace ConcesionarioAPI.DTOs
 {
     public class SucursalDTO
     {
-        [SwaggerSchema(ReadOnly = true)] // Esta anotación indica a Swagger que el campo no es editable
+        //Esta anotación indica a Swagger que el campo no es editable
+        [SwaggerSchema(ReadOnly = true)] 
         public int SucursalID { get; set; }
 
         public int UsuarioID { get; set; }

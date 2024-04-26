@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ConcesionarioAPI.Controllers
 {
@@ -28,11 +29,13 @@ namespace ConcesionarioAPI.Controllers
             _configuration = configuration;
         }
 
+        //Obtenemos todos los usuarios:
         // GET: api/Usuario
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UsuarioDTO>>> GetUsuarios()
         {
-            // Obtén solo los datos del usuario sin incluir sucursales y vehículos
+            //Obtenemos solo los datos del usuario sin incluir sucursales y vehículos:
             var usuarios = await _context.Usuarios.Select(u => new UsuarioDTO
             {
                 UsuarioID = u.UsuarioID,
@@ -44,7 +47,9 @@ namespace ConcesionarioAPI.Controllers
             return usuarios;
         }
 
+        //Obtenemos un usuario por ID:
         // GET: api/Usuario/5
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<UsuarioDTO>> GetUsuario(int id)
         {
@@ -67,18 +72,32 @@ namespace ConcesionarioAPI.Controllers
             return usuario;
         }
 
+        //Creamos un usuario:
         // POST: api/Usuario
+        //[Authorize]
         [HttpPost]
         public async Task<ActionResult<UsuarioDTO>> PostUsuario(UsuarioDTO usuarioDTO)
         {
-            // Crea un nuevo usuario con los datos proporcionados
+            //Controlamos que usuario y clave no estén vacíos:
+            if (string.IsNullOrEmpty(usuarioDTO.NombreUsuario) || string.IsNullOrEmpty(usuarioDTO.ClaveUsuario))
+            {
+                return BadRequest("El nombre de usuario y la contraseña son obligatorios.");
+            }
+
+            //Controlamos que no hayan dos usuarios con el mismo nombre en nuestra BD:
+            if (_context.Usuarios.Any(u => u.NombreUsuario == usuarioDTO.NombreUsuario))
+            {
+                return BadRequest("Ya existe un usuario con el mismo nombre.");
+            }
+
+            //Creamos un nuevo usuario con los datos proporcionados:
             var usuario = new Usuario
             {
                 NombreUsuario = usuarioDTO.NombreUsuario,
                 ClaveUsuario = usuarioDTO.ClaveUsuario
             };
 
-            // Asigna TipoUsuario solo si tiene un valor
+            //Asignamos TipoUsuario solo si tiene un valor:
             if (!string.IsNullOrEmpty(usuarioDTO.TipoUsuario))
             {
                 usuario.TipoUsuario = usuarioDTO.TipoUsuario;
@@ -87,7 +106,7 @@ namespace ConcesionarioAPI.Controllers
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
 
-            // Devuelve la respuesta con el UsuarioDTO creado
+            //Devolvemos la respuesta con el UsuarioDTO creado:
             return CreatedAtAction("GetUsuario", new { id = usuario.UsuarioID }, new UsuarioDTO
             {
                 UsuarioID = usuario.UsuarioID,
@@ -97,6 +116,7 @@ namespace ConcesionarioAPI.Controllers
             });
         }
 
+        //Servicio para loguearnos:
         // POST para el login:
         [HttpPost("login")]
         public async Task<ActionResult<dynamic>> Authenticate([FromBody] UsuarioDTO usuarioDTO)
@@ -104,7 +124,7 @@ namespace ConcesionarioAPI.Controllers
             var usuario = await _context.Usuarios.SingleOrDefaultAsync(u => u.NombreUsuario == usuarioDTO.NombreUsuario && u.ClaveUsuario == usuarioDTO.ClaveUsuario);
 
             if (usuario == null)
-                return NotFound(new { message = "Nombre de usuario o contraseña incorrectos" });
+                return Unauthorized(new { message = "Nombre de usuario o contraseña incorrectos" });
 
             var token = GenerateJwtToken(usuario);
 
@@ -120,6 +140,8 @@ namespace ConcesionarioAPI.Controllers
         //Método que genera un Token para un usuario UNA VEZ SE HA LOGUEADO:
         private string GenerateJwtToken(Usuario user)
         {
+            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
+
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UsuarioID.ToString()),
@@ -127,9 +149,7 @@ namespace ConcesionarioAPI.Controllers
                 new Claim(ClaimTypes.Role, user.TipoUsuario)
             };
 
-            // Genera una clave secreta de 256 bits (32 bytes)
-            var key = GenerateRandomKey(32);
-            var creds = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
+            var creds = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -143,8 +163,8 @@ namespace ConcesionarioAPI.Controllers
         }
 
 
-        // Método para generar una clave aleatoria
-        private static string GenerateRandomKey(int length)
+        //Método para generar una clave aleatoria
+        /*private static string GenerateRandomKey(int length)
         {
             const string validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             var random = new Random();
@@ -156,9 +176,11 @@ namespace ConcesionarioAPI.Controllers
             }
 
             return new string(chars);
-        }
+        }*/
 
+        //Editamos un usuario por ID:
         // PUT: api/Usuario/5
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUsuario(int id, UsuarioDTO usuarioDTO)
         {
@@ -173,7 +195,7 @@ namespace ConcesionarioAPI.Controllers
                 return NotFound();
             }
 
-            // Actualizar solo los campos relevantes del usuario
+            //Actualizamos solo los campos relevantes del usuario:
             usuario.NombreUsuario = usuarioDTO.NombreUsuario;
             usuario.ClaveUsuario = usuarioDTO.ClaveUsuario;
             usuario.TipoUsuario = usuarioDTO.TipoUsuario;
@@ -197,7 +219,9 @@ namespace ConcesionarioAPI.Controllers
             return NoContent();
         }
 
+        //Eliminamos un usuario por ID:
         // DELETE: api/Usuario/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUsuario(int id)
         {
@@ -211,6 +235,30 @@ namespace ConcesionarioAPI.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        //Obtenemos las sucursales de un usuario pasando su ID:
+        // GET: api/Usuario/{id}/sucursales
+        [Authorize]
+        [HttpGet("{id}/sucursales")]
+        public async Task<ActionResult<IEnumerable<SucursalDTO>>> GetSucursalesByUsuario(int id)
+        {
+            var sucursales = await _context.Sucursales
+                .Where(s => s.UsuarioID == id)
+                .Select(s => new SucursalDTO
+                {
+                    SucursalID = s.SucursalID,
+                    NombreSucursal = s.NombreSucursal,
+                    Ubicacion = s.Ubicacion
+                })
+                .ToListAsync();
+
+            if (sucursales == null || !sucursales.Any())
+            {
+                return NotFound("No se encontraron sucursales para el usuario especificado.");
+            }
+
+            return sucursales;
         }
 
         private bool UsuarioExists(int id)

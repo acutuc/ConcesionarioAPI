@@ -59,6 +59,33 @@ namespace ConcesionarioAPI.Controllers
             return sucursal;
         }
 
+        //Obtenemos todos los vehiculos dada una sucursal:
+        // GET: api/Sucursal/{id}/vehiculos
+        [HttpGet("{id}/vehiculos")]
+        public async Task<ActionResult<IEnumerable<VehiculoDTO>>> GetVehiculosBySucursal(int id)
+        {
+            var vehiculos = await _context.Vehiculos
+                .Where(v => v.SucursalID == id)
+                .Select(v => new VehiculoDTO
+                {
+                    VehiculoID = v.VehiculoID,
+                    SucursalID = v.SucursalID,
+                    Marca = v.Marca,
+                    Modelo = v.Modelo,
+                    Anio = v.Anio,
+                    Precio = v.Precio,
+                    Vendido = v.Vendido
+                })
+                .ToListAsync();
+
+            if (!vehiculos.Any())
+            {
+                return NotFound($"No se encontraron vehículos para la sucursal con ID {id}.");
+            }
+
+            return vehiculos;
+        }
+
         // POST: api/Sucursal
         [HttpPost]
         public async Task<ActionResult<SucursalDTO>> PostSucursal(SucursalDTO sucursalDTO)

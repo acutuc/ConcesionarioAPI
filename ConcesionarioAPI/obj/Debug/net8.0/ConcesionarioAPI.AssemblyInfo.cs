@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ConcesionarioAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c06f884e8badd826ffd86b367487e54b5bd69f79")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c5dd8d29b4a5370c216dbe72f629af1bcc2a4f12")]
 [assembly: System.Reflection.AssemblyProductAttribute("ConcesionarioAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ConcesionarioAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

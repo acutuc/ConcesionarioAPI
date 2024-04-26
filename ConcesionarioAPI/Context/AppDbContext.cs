@@ -34,6 +34,10 @@ namespace ConcesionarioAPI.Context
             modelBuilder.Entity<Usuario>()
                 .Property(u => u.ClaveUsuario)
                 .IsRequired();
+
+            modelBuilder.Entity<Usuario>()
+            .Property(b => b.TipoUsuario)
+            .HasDefaultValue("normal");
         }
     }
 }
