@@ -162,22 +162,6 @@ namespace ConcesionarioAPI.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-
-        //Método para generar una clave aleatoria
-        /*private static string GenerateRandomKey(int length)
-        {
-            const string validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            var random = new Random();
-            var chars = new char[length];
-
-            for (int i = 0; i < length; i++)
-            {
-                chars[i] = validChars[random.Next(validChars.Length)];
-            }
-
-            return new string(chars);
-        }*/
-
         //Editamos un usuario por ID:
         // PUT: api/Usuario/5
         [Authorize]
