@@ -27,12 +27,10 @@ namespace ConcesionarioAPI.Controllers
             var vehiculos = await _context.Vehiculos.Select(v => new VehiculoDTO
             {
                 VehiculoID = v.VehiculoID,
-                SucursalID = v.SucursalID,
                 Marca = v.Marca,
                 Modelo = v.Modelo,
                 Anio = v.Anio,
-                Precio = v.Precio,
-                Vendido = v.Vendido
+                Precio = v.Precio
             }).ToListAsync();
 
             return vehiculos;
@@ -52,12 +50,10 @@ namespace ConcesionarioAPI.Controllers
             var vehiculoDTO = new VehiculoDTO
             {
                 VehiculoID = vehiculo.VehiculoID,
-                SucursalID = vehiculo.SucursalID,
                 Marca = vehiculo.Marca,
                 Modelo = vehiculo.Modelo,
                 Anio = vehiculo.Anio,
-                Precio = vehiculo.Precio,
-                Vendido = vehiculo.Vendido
+                Precio = vehiculo.Precio
             };
 
             return vehiculoDTO;
@@ -69,16 +65,16 @@ namespace ConcesionarioAPI.Controllers
         {
             var vehiculo = new Vehiculo
             {
-                SucursalID = vehiculoDTO.SucursalID,
                 Marca = vehiculoDTO.Marca,
                 Modelo = vehiculoDTO.Modelo,
                 Anio = vehiculoDTO.Anio,
-                Precio = vehiculoDTO.Precio,
-                Vendido = vehiculoDTO.Vendido
+                Precio = vehiculoDTO.Precio
             };
 
             _context.Vehiculos.Add(vehiculo);
             await _context.SaveChangesAsync();
+
+            vehiculoDTO.VehiculoID = vehiculo.VehiculoID;
 
             return CreatedAtAction("GetVehiculo", new { id = vehiculo.VehiculoID }, vehiculoDTO);
         }
@@ -98,28 +94,12 @@ namespace ConcesionarioAPI.Controllers
                 return NotFound();
             }
 
-            vehiculo.SucursalID = vehiculoDTO.SucursalID;
             vehiculo.Marca = vehiculoDTO.Marca;
             vehiculo.Modelo = vehiculoDTO.Modelo;
             vehiculo.Anio = vehiculoDTO.Anio;
             vehiculo.Precio = vehiculoDTO.Precio;
-            vehiculo.Vendido = vehiculoDTO.Vendido;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!VehiculoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -140,9 +120,29 @@ namespace ConcesionarioAPI.Controllers
             return NoContent();
         }
 
-        private bool VehiculoExists(int id)
+        //Obtenemos todos los vehículos de una sucursal en concreto:
+        [HttpGet("VehiculosEnSucursal/{sucursalId}")]
+        public async Task<ActionResult<IEnumerable<VehiculoDTO>>> GetVehiculosEnSucursal(int sucursalId)
         {
-            return _context.Vehiculos.Any(e => e.VehiculoID == id);
+            var solicitudesEnSucursal = await _context.Solicitudes
+                .Where(s => s.SucursalID == sucursalId && s.Estado == "aprobada")
+                .ToListAsync();
+
+            var vehiculosIdsEnSucursal = solicitudesEnSucursal.Select(s => s.VehiculoID).Distinct();
+
+            var vehiculosEnSucursal = await _context.Vehiculos
+                .Where(v => vehiculosIdsEnSucursal.Contains(v.VehiculoID))
+                .Select(v => new VehiculoDTO
+                {
+                    VehiculoID = v.VehiculoID,
+                    Marca = v.Marca,
+                    Modelo = v.Modelo,
+                    Anio = v.Anio,
+                    Precio = v.Precio
+                })
+                .ToListAsync();
+
+            return vehiculosEnSucursal;
         }
     }
 }

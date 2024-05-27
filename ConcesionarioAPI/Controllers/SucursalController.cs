@@ -31,7 +31,7 @@ namespace ConcesionarioAPI.Controllers
                 SucursalID = s.SucursalID,
                 NombreSucursal = s.NombreSucursal,
                 Ubicacion = s.Ubicacion,
-                UsuarioID = s.UsuarioID  // Incluye el UsuarioID en el mapeo
+                UsuarioID = s.UsuarioID
             }).ToListAsync();
 
             return sucursales;
@@ -53,12 +53,12 @@ namespace ConcesionarioAPI.Controllers
 
             if (sucursal == null)
             {
-                return NotFound();
+                return NotFound("La sucursal especificada no existe.");
             }
 
             return sucursal;
         }
-
+        /*
         //Obtenemos todos los vehiculos dada una sucursal:
         // GET: api/Sucursal/{id}/vehiculos
         [HttpGet("{id}/vehiculos")]
@@ -85,7 +85,7 @@ namespace ConcesionarioAPI.Controllers
 
             return vehiculos;
         }
-
+        */
         // POST: api/Sucursal
         [HttpPost]
         public async Task<ActionResult<SucursalDTO>> PostSucursal(SucursalDTO sucursalDTO)
@@ -119,13 +119,13 @@ namespace ConcesionarioAPI.Controllers
         {
             if (id != sucursalDTO.SucursalID)
             {
-                return BadRequest();
+                return BadRequest("El ID de la sucursal proporcionado no coincide con el ID en los datos.");
             }
 
             var sucursal = await _context.Sucursales.FindAsync(id);
             if (sucursal == null)
             {
-                return NotFound();
+                return NotFound("La sucursal especificada no existe.");
             }
 
             sucursal.NombreSucursal = sucursalDTO.NombreSucursal;
@@ -139,7 +139,7 @@ namespace ConcesionarioAPI.Controllers
             {
                 if (!SucursalExists(id))
                 {
-                    return NotFound();
+                    return NotFound("La sucursal especificada no existe.");
                 }
                 else
                 {
@@ -157,7 +157,7 @@ namespace ConcesionarioAPI.Controllers
             var sucursal = await _context.Sucursales.FindAsync(id);
             if (sucursal == null)
             {
-                return NotFound();
+                return NotFound("La sucursal especificada no existe.");
             }
 
             _context.Sucursales.Remove(sucursal);

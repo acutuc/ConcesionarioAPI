@@ -6,8 +6,6 @@ namespace ConcesionarioAPI.DTOs
     {
         public int VehiculoID { get; set; }
 
-        public int SucursalID { get; set; }
-
         [Required(ErrorMessage = "La marca es obligatoria.")]
         public string Marca { get; set; }
 
@@ -16,8 +14,6 @@ namespace ConcesionarioAPI.DTOs
 
         public int Anio { get; set; }
 
-        public double Precio { get; set; }
-
-        public bool Vendido { get; set; }
+        public int Precio { get; set; }
     }
 }

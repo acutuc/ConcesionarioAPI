@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ConcesionarioAPI.Context;
 using ConcesionarioAPI.Models;
@@ -31,7 +26,7 @@ namespace ConcesionarioAPI.Controllers
 
         //Obtenemos todos los usuarios:
         // GET: api/Usuario
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UsuarioDTO>>> GetUsuarios()
         {
@@ -49,7 +44,7 @@ namespace ConcesionarioAPI.Controllers
 
         //Obtenemos un usuario por ID:
         // GET: api/Usuario/5
-        [Authorize]
+        //[Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<UsuarioDTO>> GetUsuario(int id)
         {
@@ -155,7 +150,7 @@ namespace ConcesionarioAPI.Controllers
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Issuer"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(30),
+                expires: DateTime.Now.AddMinutes(600),
                 signingCredentials: creds
             );
 
