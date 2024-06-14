@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ConcesionarioAPI.Context;
 using ConcesionarioAPI.Models;
@@ -115,19 +110,28 @@ namespace ConcesionarioAPI.Controllers
             return CreatedAtAction(nameof(GetSolicitud), new { id = solicitud.SolicitudID }, solicitudDTO);
         }
 
-        //EN EL MÉTODO PUT, SOLO ACTUALIZAREMOS EL ESTADO DE LA SOLICITUD:
+        //EN EL MÉTODO PUT, SOLO ACTUALIZAREMOS EL ESTADO DE LA SOLICITUD Y EL PRECIO DEL VEHICULO:
         // PUT: api/Solicitud/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSolicitud(int id, ActualizarEstadoSolicitudDTO actualizarEstadoSolicitudDTO)
         {
-            var solicitud = await _context.Solicitudes.FindAsync(id);
+            var solicitud = await _context.Solicitudes
+                .Include(s => s.Vehiculo) 
+                .FirstOrDefaultAsync(s => s.SolicitudID == id);
+
             if (solicitud == null)
             {
                 return NotFound($"No se encontró ninguna solicitud con el ID {id}.");
             }
 
-            //ACTUALIZAMOS SÓLO EL ESTADO:
+            //Actualizamos el estado de la solicitud
             solicitud.Estado = actualizarEstadoSolicitudDTO.Estado;
+
+            //Si el estado es "aprobada" y el precio no ha sido actualizado, incrementamos el precio
+            if (solicitud.Estado == "aprobada" && !actualizarEstadoSolicitudDTO.PrecioActualizado)
+            {
+                solicitud.Vehiculo.Precio = (int)(solicitud.Vehiculo.Precio * 1.18);
+            }
 
             try
             {
@@ -227,6 +231,39 @@ namespace ConcesionarioAPI.Controllers
             };
 
             return solicitudDTO;
+        }
+
+        //Actualizamos la solicitud basándonos en el vehículoID
+        // PUT: api/Solicitud/UpdateByVehiculoId/5
+        [HttpPut("UpdateByVehiculoId/{vehiculoID}")]
+        public async Task<IActionResult> UpdateByVehiculoId(int vehiculoID, [FromBody] ActualizarEstadoYClienteDTO actualizarEstadoYClienteDTO)
+        {
+            var solicitud = await _context.Solicitudes.FirstOrDefaultAsync(s => s.VehiculoID == vehiculoID);
+            if (solicitud == null)
+            {
+                return NotFound();
+            }
+
+            solicitud.Estado = actualizarEstadoYClienteDTO.Estado;
+            solicitud.ClienteID = actualizarEstadoYClienteDTO.ClienteID;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!SolicitudExists(solicitud.SolicitudID))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
         }
 
         //Método auxiliar para verificar si una solicitud existe en la base de datos

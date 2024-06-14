@@ -60,6 +60,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
 
 app.UseRouting();
 
@@ -69,9 +70,11 @@ app.UseAuthorization();
 
 app.UseCors("AllowSpecificOrigin");
 
+//Configuración para redirigir rutas a index.html:
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
+    endpoints.MapFallbackToFile("/index.html");
 });
 
 
